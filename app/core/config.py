@@ -1,151 +1,92 @@
 # ===================================
 # app/core/config.py
 # ===================================
-"""
-Configuration centralisée de l'application avec Pydantic Settings.
-Gère toutes les variables d'environnement et leur validation.
-"""
-
-from functools import lru_cache
-from typing import Optional
-from pydantic import Field, PostgresDsn, validator
+from typing import List, Union
+from pydantic import AnyHttpUrl, validator
 from pydantic_settings import BaseSettings
 
 
 class Settings(BaseSettings):
-    """Configuration principale de l'application."""
+    # Projet
+    PROJECT_NAME: str = "MAEF E-commerce"
+    VERSION: str = "1.0.0"
+    API_V1_STR: str = "/api/v1"
     
-    # Application
-    app_name: str = Field(default="Maef By Yas API", description="Nom de l'application")
-    app_version: str = Field(default="1.0.0", description="Version de l'application")
-    debug: bool = Field(default=False, description="Mode debug")
-    environment: str = Field(default="development", description="Environnement (dev/staging/prod)")
+    # Base de données PostgreSQL
+    POSTGRES_SERVER: str = "localhost"
+    POSTGRES_USER: str = "maef"
+    POSTGRES_PASSWORD: str = "maef"
+    POSTGRES_DB: str = "maef"
+    POSTGRES_PORT: int = 5432
+    DATABASE_URL: str = ""
     
-    # API
-    api_prefix: str = Field(default="/api/v1", description="Préfixe de l'API")
-    allowed_hosts: list[str] = Field(default=["*"], description="Hosts autorisés")
+    @validator("DATABASE_URL", pre=True)
+    def assemble_db_connection(cls, v: str, values: dict) -> str:
+        if isinstance(v, str) and v:
+            return v
+        return (
+            f"postgresql+psycopg://{values.get('POSTGRES_USER')}:"
+            f"{values.get('POSTGRES_PASSWORD')}@{values.get('POSTGRES_SERVER')}:"
+            f"{values.get('POSTGRES_PORT')}/{values.get('POSTGRES_DB')}"
+        )
     
-    # Base de données
-    database_url: PostgresDsn = Field(
-        description="URL de connexion PostgreSQL",
-        example="postgresql+psycopg://user:pass@localhost:5432/maef"
-    )
-    
-    
-    # JWT/Security
-    jwt_secret_key: str = Field(
-        description="Clé secrète pour JWT (doit être complexe en production)"
-    )
-    jwt_algorithm: str = Field(default="HS256", description="Algorithme JWT")
-    jwt_access_token_expire_minutes: int = Field(
-        default=60, description="Durée de vie access token (minutes)"
-    )
-    jwt_refresh_token_expire_minutes: int = Field(
-        default=43200, description="Durée de vie refresh token (minutes) - 30 jours"
-    )
-    password_hash_rounds: int = Field(default=12, description="Rounds bcrypt")
+    # JWT Configuration
+    SECRET_KEY: str = "your-super-secret-key-change-in-production"
+    ALGORITHM: str = "HS256"
+    ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
+    REFRESH_TOKEN_EXPIRE_DAYS: int = 30
     
     # CORS
-    cors_origins: list[str] = Field(
-        default=["http://localhost:3000", "http://localhost:5173"],
-        description="Origins autorisés pour CORS"
-    )
-    cors_allow_credentials: bool = Field(default=True, description="Autoriser credentials CORS")
-    cors_allow_methods: list[str] = Field(
-        default=["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
-        description="Méthodes HTTP autorisées"
-    )
-    cors_allow_headers: list[str] = Field(
-        default=["*"], description="Headers autorisés"
-    )
+    BACKEND_CORS_ORIGINS: List[Union[AnyHttpUrl, str]] = [
+        "http://localhost:3000",  # React dev
+        "http://localhost:3001", 
+        "http://localhost:8080",  # Vue dev
+        "http://127.0.0.1:3000",
+    ]
+
+    @validator("BACKEND_CORS_ORIGINS", pre=True)
+    def assemble_cors_origins(cls, v: Union[str, List[str]]) -> Union[List[str], str]:
+        if isinstance(v, str) and not v.startswith("["):
+            return [i.strip() for i in v.split(",")]
+        elif isinstance(v, (list, str)):
+            return v
+        raise ValueError(v)
+
+    # Sécurité
+    BCRYPT_ROUNDS: int = 12
     
-    # Rate Limiting
-    rate_limit_enabled: bool = Field(default=True, description="Activer le rate limiting")
-    rate_limit_requests_per_minute: int = Field(default=60, description="Requêtes par minute")
+    # Instagram Integration (optionnel)
+    IG_APP_ID: str = ""
+    IG_APP_SECRET: str = ""
+    IG_REDIRECT_URI: str = ""
     
-    # Upload & Media
-    max_file_size: int = Field(default=10 * 1024 * 1024, description="Taille max fichier (10MB)")
-    allowed_image_types: list[str] = Field(
-        default=["image/jpeg", "image/png", "image/webp"],
-        description="Types d'images autorisés"
-    )
+    # Stripe (ou autres providers de paiement)
+    STRIPE_SECRET_KEY: str = ""
+    STRIPE_PUBLISHABLE_KEY: str = ""
+    STRIPE_WEBHOOK_SECRET: str = ""
     
-    # Intégrations externes
-    # Instagram
-    instagram_app_id: Optional[str] = Field(default=None, description="App ID Instagram")
-    instagram_app_secret: Optional[str] = Field(default=None, description="App Secret Instagram")
-    instagram_redirect_uri: Optional[str] = Field(default=None, description="Redirect URI Instagram")
+    # Email (optionnel)
+    SMTP_TLS: bool = True
+    SMTP_PORT: int = 587
+    SMTP_HOST: str = ""
+    SMTP_USER: str = ""
+    SMTP_PASSWORD: str = ""
     
-    # Stripe
-    stripe_public_key: Optional[str] = Field(default=None, description="Clé publique Stripe")
-    stripe_secret_key: Optional[str] = Field(default=None, description="Clé secrète Stripe")
-    stripe_webhook_secret: Optional[str] = Field(default=None, description="Secret webhook Stripe")
+    # Media settings
+    MAX_FILE_SIZE: int = 10 * 1024 * 1024  # 10MB
+    ALLOWED_IMAGE_TYPES: List[str] = ["image/jpeg", "image/png", "image/webp", "image/gif"]
+    ALLOWED_VIDEO_TYPES: List[str] = ["video/mp4", "video/webm", "video/quicktime"]
     
-    # FedaPay (alternative locale)
-    fedapay_public_key: Optional[str] = Field(default=None, description="Clé publique FedaPay")
-    fedapay_secret_key: Optional[str] = Field(default=None, description="Clé secrète FedaPay")
-    fedapay_webhook_secret: Optional[str] = Field(default=None, description="Secret webhook FedaPay")
+    # APScheduler
+    SCHEDULER_ENABLED: bool = True
     
-    # Email
-    smtp_server: Optional[str] = Field(default=None, description="Serveur SMTP")
-    smtp_port: int = Field(default=587, description="Port SMTP")
-    smtp_username: Optional[str] = Field(default=None, description="Username SMTP")
-    smtp_password: Optional[str] = Field(default=None, description="Password SMTP")
-    smtp_use_tls: bool = Field(default=True, description="Utiliser TLS")
-    from_email: str = Field(default="noreply@maefbyyas.com", description="Email expéditeur")
-    
-    # Search
-    search_engine: str = Field(
-        default="postgresql",
-        description="Moteur de recherche (postgresql/meilisearch/elasticsearch)"
-    )
-    meilisearch_url: Optional[str] = Field(default=None, description="URL Meilisearch")
-    meilisearch_api_key: Optional[str] = Field(default=None, description="Clé API Meilisearch")
-    
-    # Logging
-    log_level: str = Field(default="INFO", description="Niveau de log")
-    log_format: str = Field(default="json", description="Format de log (json/text)")
-    
+    # Environment
+    ENVIRONMENT: str = "development"  # development, staging, production
+    DEBUG: bool = True
+
     class Config:
         env_file = ".env"
-        env_file_encoding = "utf-8"
-        case_sensitive = False
-    
-    @validator("environment")
-    def validate_environment(cls, v):
-        """Valide que l'environnement est correct."""
-        allowed_envs = ["development", "staging", "production"]
-        if v not in allowed_envs:
-            raise ValueError(f"Environment must be one of {allowed_envs}")
-        return v
-    
-    @validator("log_level")
-    def validate_log_level(cls, v):
-        """Valide le niveau de log."""
-        allowed_levels = ["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"]
-        if v.upper() not in allowed_levels:
-            raise ValueError(f"Log level must be one of {allowed_levels}")
-        return v.upper()
-    
-    @property
-    def is_production(self) -> bool:
-        """Retourne True si on est en production."""
-        return self.environment == "production"
-    
-    @property
-    def is_development(self) -> bool:
-        """Retourne True si on est en développement."""
-        return self.environment == "development"
+        case_sensitive = True
 
 
-@lru_cache()
-def get_settings() -> Settings:
-    """
-    Retourne l'instance des settings avec cache.
-    Le cache évite de recharger les variables d'environnement à chaque appel.
-    """
-    return Settings()
-
-
-# Raccourci pour accéder aux settings
-settings = get_settings()
+settings = Settings()

@@ -1,17 +1,39 @@
-# requirements.txt
+# FastAPI et dépendances web
 fastapi==0.104.1
 uvicorn[standard]==0.24.0
+python-multipart==0.0.6
+
+# Base de données PostgreSQL
 sqlalchemy==2.0.23
 alembic==1.12.1
+psycopg[binary]==3.1.13
 psycopg2-binary==2.9.9
-pydantic==2.5.0
-pydantic-settings==2.1.0
+
+# Authentification et sécurité
 python-jose[cryptography]==3.3.0
 passlib[bcrypt]==1.7.4
 python-multipart==0.0.6
-pillow==10.1.0
-boto3==1.34.0
-stripe==7.8.0
-httpx==0.25.2
+
+# Validation et configuration
+pydantic==2.5.0
+pydantic-settings==2.1.0
+
+# Background jobs
+APScheduler==3.10.4
+
+# Image processing
+Pillow==10.1.0
+
+# Paiements
+stripe==7.7.0
+
+# Email (optionnel)
+emails==0.6.0
+
+# Testing
 pytest==7.4.3
 pytest-asyncio==0.21.1
+httpx==0.25.2
+
+# Développement
+python-dotenv==1.0.0
