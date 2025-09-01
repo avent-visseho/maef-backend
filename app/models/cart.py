@@ -191,4 +191,55 @@ class CartItem(Base):
 
     @hybrid_property
     def display_name(self):
-        """Nom d'affichage de l'article
+        """Nom d'affichage de l'article"""
+        name = self.product.title
+        if self.variant:
+            name += f" - {self.variant.name}"
+        return name
+
+    @hybrid_property
+    def available_stock(self):
+        """Stock disponible pour cet article"""
+        if self.variant:
+            return self.variant.available_quantity
+        elif self.product.inventory:
+            return self.product.inventory[0].qty_on_hand - self.product.inventory[0].qty_reserved
+        return 0
+
+    def validate(self, db_session) -> List[str]:
+        """Valider cet article du panier"""
+        errors = []
+        
+        # Vérifier que le produit existe et est actif
+        if not self.product or not self.product.is_active:
+            errors.append("Le produit n'existe plus ou n'est plus disponible")
+            return errors
+        
+        # Vérifier que la variante existe et est active (si applicable)
+        if self.variant_id:
+            if not self.variant or not self.variant.is_active:
+                errors.append("La variante sélectionnée n'est plus disponible")
+                return errors
+        
+        # Vérifier le stock
+        available = self.available_stock
+        if available <= 0:
+            errors.append("Plus en stock")
+        elif self.quantity > available:
+            errors.append(f"Stock insuffisant (disponible: {available})")
+        
+        # Vérifier le prix
+        current_price = self.current_unit_price
+        if current_price <= 0:
+            errors.append("Prix non disponible")
+        
+        return errors
+
+    def update_price(self):
+        """Mettre à jour le prix stocké avec le prix actuel"""
+        self.unit_price = self.current_unit_price
+        self.currency = "XOF"  # ou récupérer depuis les settings
+
+    def is_valid(self) -> bool:
+        """Vérifier si l'article est valide"""
+        return len(self.validate(None)) == 0  # Note: nécessite une session DB pour validation complète
