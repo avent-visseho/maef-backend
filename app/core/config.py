@@ -9,7 +9,7 @@ from pydantic_settings import BaseSettings
 class Settings(BaseSettings):
     # Projet
     PROJECT_NAME: str = "MAEF E-commerce"
-    VERSION: str = "1.0.0"
+    PROJECT_VERSION: str = "1.0.0"
     API_V1_STR: str = "/api/v1"
     
     # Base de données PostgreSQL
@@ -87,6 +87,6 @@ class Settings(BaseSettings):
     class Config:
         env_file = ".env"
         case_sensitive = True
-
+        extra = "allow"
 
 settings = Settings()

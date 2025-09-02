@@ -44,7 +44,7 @@ class MediaAsset(Base):
     is_processed = Column(Boolean, default=False)  # Pour les traitements async
     
     # Métadonnées optionnelles (EXIF, etc.)
-    metadata = Column(Text, nullable=True)  # JSON string
+    file_metadata = Column(Text, nullable=True)  # JSON string
     
     # Timestamps
     created_at = Column(DateTime(timezone=True), server_default=func.now(), index=True)

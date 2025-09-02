@@ -351,4 +351,98 @@ def delete_product_variant(
 
 
 # Gestion des médias produit
-@router.post("/{product_id}/media", response_model=
+@router.post("/{product_id}/media", response_model=ProductResponse)
+
+def create_product_media(
+    product_id: int,
+    media_data: ProductMediaCreate,
+    current_user: User = Depends(require_scope("media:write")),
+    db: Session = Depends(get_db)
+) -> Any:
+    """
+    Ajouter un média à un produit (Admin/Manager)
+    """
+    product_repo = ProductRepository(db)
+    product_service = ProductService(db)
+    
+    product = product_repo.get_product_by_id(product_id)
+    if not product:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Produit non trouvé"
+        )
+    
+    # Ajouter le média
+    media = product_service.add_media_to_product(product_id, media_data, current_user.id)
+    
+    # Récupérer le produit mis à jour
+    updated_product = product_repo.get_product_by_id(product_id, with_media=True)
+    
+    return ProductResponse(
+        message="Média ajouté avec succès",
+        data=ProductDetail.from_orm(updated_product)
+    )
+
+
+@router.delete("/{product_id}/media/{media_id}")
+def remove_product_media(
+    product_id: int,
+    media_id: int,
+    current_user: User = Depends(require_scope("media:write")),
+    db: Session = Depends(get_db)
+) -> Any:
+    """
+    Supprimer un média d'un produit (Admin/Manager)
+    """
+    product_repo = ProductRepository(db)
+    
+    product = product_repo.get_product_by_id(product_id)
+    if not product:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Produit non trouvé"
+        )
+    
+    # Supprimer le média
+    success = product_repo.remove_media_from_product(product_id, media_id)
+    
+    if not success:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Média non trouvé"
+        )
+    
+    return {
+        "success": True,
+        "message": "Média supprimé avec succès"
+    }
+
+
+@router.get("/related/{product_id}", response_model=ProductsListResponse)
+def get_related_products(
+    product_id: int,
+    limit: int = Query(4, ge=1, le=20, description="Nombre de produits connexes"),
+    db: Session = Depends(get_db)
+) -> Any:
+    """
+    Récupérer les produits connexes
+    """
+    product_repo = ProductRepository(db)
+    product_service = ProductService(db)
+    
+    product = product_repo.get_product_by_id(product_id)
+    if not product:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Produit non trouvé"
+        )
+    
+    related_products = product_service.get_related_products(product_id, limit)
+    
+    return ProductsListResponse(
+        data=[Product.from_orm(p) for p in related_products],
+        total=len(related_products),
+        page=1,
+        per_page=limit,
+        has_more=False
+    )
