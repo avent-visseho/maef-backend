@@ -53,7 +53,7 @@ def create_app() -> FastAPI:
     
     app = FastAPI(
         title=settings.PROJECT_NAME,
-        version=settings.VERSION,
+        version=settings.PROJECT_VERSION,  # Changé de VERSION à PROJECT_VERSION
         openapi_url=f"{settings.API_V1_STR}/openapi.json",
         docs_url="/docs",
         redoc_url="/redoc",
@@ -94,7 +94,7 @@ def create_app() -> FastAPI:
         
         return {
             "status": "ok" if db_status == "ok" else "error",
-            "version": settings.VERSION,
+            "version": settings.PROJECT_VERSION,  # Changé de VERSION à PROJECT_VERSION
             "environment": settings.ENVIRONMENT,
             "database": db_status,
             "scheduler": "ok" if settings.SCHEDULER_ENABLED else "disabled"
@@ -105,7 +105,7 @@ def create_app() -> FastAPI:
     async def root():
         return {
             "message": f"Bienvenue sur {settings.PROJECT_NAME}",
-            "version": settings.VERSION,
+            "version": settings.PROJECT_VERSION,  # Changé de VERSION à PROJECT_VERSION
             "docs": "/docs",
             "health": "/health"
         }

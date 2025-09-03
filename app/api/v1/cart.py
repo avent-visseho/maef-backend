@@ -9,7 +9,7 @@ from app.core.database import get_db
 from app.core.security import get_current_active_user
 from app.api.deps import get_current_user_or_none
 from app.repositories.cart_repo import CartRepository
-from app.repositories.product_repo import get_product_by_id
+from app.repositories.product_repo import ProductRepository
 from app.schemas.cart import (
     Cart,
     CartItem,
@@ -65,9 +65,10 @@ def add_item_to_cart(
     Ajouter un article au panier
     """
     cart_repo = CartRepository(db)
+    product_repo = ProductRepository(db)
     
     # Vérifier que le produit existe
-    product = get_product_by_id(db, item_data.product_id)
+    product = product_repo.get_product_by_id(item_data.product_id)
     if not product or not product.is_active:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,

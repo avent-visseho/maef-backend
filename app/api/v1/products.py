@@ -20,7 +20,7 @@ from app.schemas.product import (
     ProductVariant,
     ProductVariantCreate,
     ProductVariantUpdate,
-    ProductMedia,
+    MediaInfo,  # ← Utilisez MediaInfo à la place
     ProductMediaCreate
 )
 from app.models.user import User
