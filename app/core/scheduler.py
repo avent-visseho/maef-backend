@@ -53,7 +53,8 @@ def add_periodic_jobs():
         trigger='cron',
         hour=2,
         minute=0,
-        id='cleanup_expired_tokens'
+        id='cleanup_expired_tokens',
+        replace_existing=True  # Remplace la tâche si elle existe déjà
     )
     
     # Nettoyage des paniers abandonnés (tous les jours à 3h)
@@ -62,7 +63,8 @@ def add_periodic_jobs():
         trigger='cron',
         hour=3,
         minute=0,
-        id='cleanup_abandoned_carts'
+        id='cleanup_abandoned_carts',
+        replace_existing=True  # Remplace la tâche si elle existe déjà
     )
     
     # Ingestion des stories Instagram (toutes les 10 minutes)
@@ -71,7 +73,8 @@ def add_periodic_jobs():
             func=ingest_instagram_stories_job,
             trigger='interval',
             minutes=10,
-            id='ingest_instagram_stories'
+            id='ingest_instagram_stories',
+            replace_existing=True  # Remplace la tâche si elle existe déjà
         )
 
 def cleanup_expired_tokens_job():
